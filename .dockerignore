@@ -1,0 +1,14 @@
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+
+# We must include the model, but we don't need the local test samples 
+# if we just want to run the server. (However, you can leave it if you want)
+test_samples/
+data/
+
+# Don't copy previous test uploads or generated masks
+uploads/
+static/

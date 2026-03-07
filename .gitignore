@@ -1,0 +1,22 @@
+# local data (do not commit)
+data/
+
+# local samples (do not commit)
+test_samples/
+
+# secrets + local env
+.env
+
+# model weights
+model/*.pth
+
+# local folders that should not be tracked
+uploads/
+
+# python env + cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

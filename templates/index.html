@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Segmentation AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #0f172a;
+            --container-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #f8fafc;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--container-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #475569;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.5);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 2rem;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #file-name {
+            margin-top: 1rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .result-container {
+            margin-top: 3rem;
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            background: white;
+            /* Contrast for Matplotlib plot */
+        }
+
+        .loader {
+            display: none;
+            margin: 2rem auto;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Water Segmentation AI</h1>
+        <p class="subtitle">Upload a 12-channel .tif image from your isolated test set to detect water bodies.</p>
+
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            <label class="upload-area" for="file-input" id="drop-zone">
+                <span class="upload-icon">💧</span>
+                <span style="font-size: 1.2rem; font-weight: 500;">Click to browse or drag and drop</span>
+                <span style="color: #64748b; font-size: 0.9rem; margin-top: 0.5rem; display: block;">Supports .tif and
+                    .tiff files</span>
+                <input type="file" name="file" id="file-input" accept=".tif,.tiff" required>
+                <div id="file-name"></div>
+            </label>
+
+            <button type="submit" class="btn" id="submit-btn" disabled>Analyze Image</button>
+            <div class="loader" id="loader"></div>
+        </form>
+
+        {% if uploaded_image %}
+        <div class="result-container">
+            <h3>Segmentation Result</h3>
+            <img src="{{ url_for('serve_image', filename=uploaded_image) }}" alt="Prediction" class="result-image">
+
+            {% if water_area and water_area > 0 %}
+            <div
+                style="margin-top: 1.5rem; padding: 1rem; background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); border-radius: 8px;">
+                <h4 style="margin: 0; color: #60a5fa;">Physical Area Calculation</h4>
+                <p style="margin: 0.5rem 0 0 0; font-size: 1.1rem;">
+                    <strong>{{ "{:,.2f}".format(water_area) }}</strong> sq. meters<br>
+                    <span style="color: #94a3b8; font-size: 0.9rem;">(Approx. {{ "{:,.4f}".format(water_area / 1000000)
+                        }} sq. kilometers)</span>
+                </p>
+            </div>
+            {% endif %}
+
+            <br>
+            <a href="/" class="btn" style="margin-top: 2rem; background: #475569;">Analyze Another Image</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const fileNameDisplay = document.getElementById('file-name');
+        const submitBtn = document.getElementById('submit-btn');
+        const form = document.getElementById('upload-form');
+        const loader = document.getElementById('loader');
+        const dropZone = document.getElementById('drop-zone');
+
+        fileInput.addEventListener('change', function () {
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = "Selected: " + this.files[0].name;
+                submitBtn.disabled = false;
+            }
+        });
+
+        ['dragover', 'dragenter'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'dragdrop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileNameDisplay.textContent = "Selected: " + files[0].name;
+                submitBtn.disabled = false;
+            }
+        });
+
+        form.addEventListener('submit', function () {
+            submitBtn.style.display = 'none';
+            document.querySelector('.upload-area').style.opacity = '0.5';
+            document.querySelector('.upload-area').style.pointerEvents = 'none';
+            loader.style.display = 'block';
+        });
+    </script>
+</body>
+
+</html>
